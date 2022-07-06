@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import asyncio
 import datetime
 from asyncio import sleep
@@ -5,33 +7,28 @@ from asyncio import sleep
 import requests
 from fake_headers import Headers
 from pygame import mixer
-from requests_html import AsyncHTMLSession, HTMLSession
 
 
 class IkeaCheck:
-    period = 5
+    period = 60
     url = 'https://www.ikea.com/ru/ru/customer-service/contact-us/zayavka-na-oformlenie-zakaza-pub1a73c1b0'
     header = Headers(
-        browser="chrome",  # Generate only Chrome UA
-        os="win",  # Generate ony Windows platform
-        headers=True  # generate misc headers
+        browser="chrome",
+        os="win",
+        headers=True
     )
     sirena = 'sirena-vozdushnogo-naleta-26744.mp3'
+    text = """В данный момент мы обрабатываем полученные заявки. Прием новых заявок запустится немного позже. Следите за обновлениями на нашем сайте."""
     mixer.init()
     mixer.music.load(sirena)
-    session = HTMLSession()
 
     async def verify(self) -> bool:
-        rr = self.session.get(self.url, headers=self.header.generate())
-        rr.html.render()
         r = requests.get(self.url, headers=self.header.generate())
         if r.ok:
-            if 'Автор формы уже закончил сбор данных и закрыл эту форму.' in r.text:
-                print(r.text)
+            if self.text in r.text:
                 return False
             else:
-                # return True
-                return False
+                return True
         else:
             print(f"Сайт не доступен {r.status_code}")
             return False
@@ -39,8 +36,7 @@ class IkeaCheck:
     async def run(self):
         while True:
             if await self.verify():
-                ## mixer.music.play()
-                pass
+                mixer.music.play()
             else:
                 print(f"Пока закрыто {datetime.datetime.now()}")
             await sleep(self.period)
